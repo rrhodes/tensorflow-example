@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import tensorflow as tf
 
@@ -16,24 +15,24 @@ def separateFeaturesAndCategories(trainingData, testData):
 
     return trainingFeatures, trainingCategories, testFeatures, testCategories
 
-def formatFeatures(trainingFeatures):
+def formatFeatures(features):
     formattedFeatures = dict()
-    numColumns = trainingFeatures.shape[1]
+    numColumns = features.shape[1]
 
     for i in range(0, numColumns):
-        formattedFeatures[str(i + 1)] = trainingFeatures[:, i]
+        formattedFeatures[str(i)] = features[:, i]
 
     return formattedFeatures
 
-def defineFeatureColumns(formattedFeatures):
+def defineFeatureColumns(features):
     featureColumns = []
 
-    for key in formattedFeatures.keys():
+    for key in features.keys():
         featureColumns.append(tf.feature_column.numeric_column(key=key))
 
     return featureColumns
 
-def instantiateEstimator(featureColumns):
+def instantiateClassifier(featureColumns):
     classifier = tf.estimator.DNNClassifier(
         feature_columns = featureColumns,
         hidden_units = [20, 30, 20],
@@ -47,7 +46,7 @@ def train(features, labels, batchSize):
 
     return dataset.shuffle(1000).repeat().batch(batchSize)
 
-def evaluate(features, labels, batchSize):
+def test(features, labels, batchSize):
     dataset = tf.data.Dataset.from_tensor_slices((dict(features), labels)).batch(batchSize)
 
     return dataset
@@ -58,12 +57,12 @@ def trainClassifier(classifier, trainingFeatures, trainingCategories):
         steps = 50
     )
 
-def evalClassifier(classifier, testFeatures, testCategories):
-    eval = classifier.evaluate(
-        input_fn = lambda:evaluate(testFeatures, testCategories, 100)
+def testClassifier(classifier, testFeatures, testCategories):
+    accuracy = classifier.evaluate(
+        input_fn = lambda:test(testFeatures, testCategories, 100)
     )
 
-    return eval
+    return accuracy
 
 def main():
     trainingData, testData = retrieveData()
@@ -73,13 +72,13 @@ def main():
 
     featureColumns = defineFeatureColumns(trainingFeatures)
 
-    classifier = instantiateEstimator(featureColumns)
+    classifier = instantiateClassifier(featureColumns)
 
     trainClassifier(classifier, trainingFeatures, trainingCategories)
 
-    eval = evalClassifier(classifier, testFeatures, testCategories)
+    accuracy = testClassifier(classifier, testFeatures, testCategories)
 
-    print('Test accuracy: {accuracy:0.3f}\n'.format(**eval))
+    print('Test accuracy: {accuracy:0.3f}\n'.format(**accuracy))
 
 if __name__ == "__main__":
     main()
